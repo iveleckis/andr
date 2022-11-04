@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Andriui</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+            }
+
+            body {
+                margin-top: 1rem;
+                margin-left: 1rem;
+            }
+            h1 {
+                padding-bottom: 1rem;
+            }
+            ul {
+                list-style-type: none;
+                height: 28rem;
+                border: 1px solid;
+                border-bottom: none;
+                padding: 0 1rem 0 0.5rem;
+                overflow-y: scroll;
+                border-radius: 5px;
+                border-bottom-left-radius: 0;
+                border-bottom-right-radius: 0;
+                scroll-behavior: smooth;
+            }
+            ul > li:last-child {
+                border-bottom: none;
+            }
+            li {
+                height: 3rem;
+                border-bottom: 1px solid rgb(176, 176, 176);
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            input {
+                width: 100%;
+                border: 1px solid;
+            }
+            button {
+                border: 1px solid rgb(160, 160, 160);
+                border-radius: 3px;
+                background: rgb(207, 207, 207);
+            }
+            button:disabled {
+                border: 1px solid;
+            }
+            button:hover {
+                cursor: pointer;
+            }
+
+            .commentContainer {
+                width: 100%;
+            }
+            .commentContainer > .date {
+                font-size: 0.8rem;
+                margin-top: 0.3rem;
+                color: rgb(121, 121, 121);
+            }
+
+            .container {
+                width: 30rem;
+            }
+            .controls {
+                width: 30rem;
+                display: flex;
+            }
+            .controls > button {
+                width: 10rem;
+                padding: 0.5rem;
+                border-left: none;
+                border-radius: 0;
+                border-top: 1px solid;
+                border-right: 1px solid;
+                border-bottom: 1px solid;
+            }
+            .controls > input {
+                padding-left: 0.5rem;
+                border-right: none;
+            }
+            .controls > input:focus {
+                outline: none;
+            }
+            .controls > input:hover {
+                border: auto;
+            }
+
+            .buttonsContainer {
+                display: flex;
+            }
+            .buttonsContainer > button {
+                margin-left: 0.5rem;
+                height: 1.7rem;
+                width: 3rem;
+            }
+            .hidden {
+                display: none;
+            }
+            .comment {
+                border: none;
+                cursor: auto;
+                width: 100%;
+            }
+            .comment:focus {
+                outline: none;
+            }
+            .editableComment {
+                border: none;
+                border-bottom: 1px solid black;
+            }
+            .editableComment:focus {
+                outline: none;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>
+                <b>Comments (<span id="commentsCount"></span>)</b>
+            </h1>
+            <div class="listContainer">
+                <ul id="listOfComments"></ul>
+                <div class="controls">
+                    <input
+                        id="addNewCommentInput"
+                        placeholder="Add new comment"
+                        type="text"
+                    />
+                    <button id="addNewCommentSubmitButton">Add comment</button>
+                </div>
+            </div>
+
+            <div style="display: flex; margin-top: 1rem">
+                <input style="width: 1rem" type="checkbox" id="toggleStream" />
+                <span style="margin-left: 0.5rem">start fake stream</span>
+            </div>
+        </div>
+
+        <script>
+            let comments = [
+                {
+                    id: 123123123233,
+                    comment: 'comment 1',
+                    createdAt: new Date('2021-01-01T12:22:00Z'),
+                },
+                {
+                    id: 331231233132,
+                    comment: 'comment 2',
+                    createdAt: new Date('2021-02-02T12:31:00Z'),
+                },
+                {
+                    id: 331231233133,
+                    comment: 'comment 3',
+                    createdAt: new Date('2021-03-03T12:43:00Z'),
+                },
+                {
+                    id: 331231233134,
+                    comment: 'comment 4',
+                    createdAt: new Date('2021-04-04T12:23:00Z'),
+                },
+                {
+                    id: 331231233135,
+                    comment: 'comment 5',
+                    createdAt: new Date('2021-05-05T12:12:00Z'),
+                },
+                {
+                    id: 331231233136,
+                    comment: 'comment 6',
+                    createdAt: new Date('2021-06-06T12:11:00Z'),
+                },
+                {
+                    id: 331231233137,
+                    comment: 'comment 7',
+                    createdAt: new Date('2021-11-11T12:09:00Z'),
+                },
+            ];
+
+            function formatDate(date) {
+                const d = new Date(date);
+
+                return (
+                    d.getFullYear() +
+                    '-' +
+                    (d.getMonth() + 1 > 9
+                        ? d.getMonth() + 1
+                        : `0${d.getMonth() + 1}`) +
+                    '-' +
+                    (d.getDate() + 1 > 9
+                        ? d.getDate() + 1
+                        : `0${d.getDate() + 1}`) +
+                    ' ' +
+                    (d.getHours() > 9 ? d.getHours() : `0${d.getHours()}`) +
+                    ':' +
+                    (d.getMinutes() > 9 ? d.getMinutes() : `0${d.getMinutes()}`)
+                );
+            }
+
+            let isStreaming = false;
+
+            const listOfComments = document.querySelector('#listOfComments');
+            const addNewCommentInput = document.querySelector(
+                '#addNewCommentInput'
+            );
+            const addNewCommentSubmitButton = document.querySelector(
+                '#addNewCommentSubmitButton'
+            );
+            const commentsCount = document.querySelector('#commentsCount');
+            const toggleStream = document.querySelector('#toggleStream');
+
+            addNewCommentSubmitButton.onclick = addCommentToList;
+            toggleStream.addEventListener('change', handleStream);
+
+            function handleStream() {
+                if (isStreaming) {
+                    isStreaming = false;
+                } else {
+                    fakeCommentStream();
+                }
+            }
+
+            async function fakeCommentStream() {
+                isStreaming = true;
+                while (isStreaming) {
+                    const randomString = (Math.random() + 1)
+                        .toString(36)
+                        .substring(7);
+                    const randomDelay =
+                        (Math.floor(Math.random() * 10) + 1) * 100;
+
+                    await sleep(randomDelay);
+
+                    comments.push({
+                        id: Date.now(),
+                        comment: randomString,
+                        createdAt: formatDate(Date.now()),
+                    });
+
+                    generateList();
+
+                    listOfComments.scrollTop = listOfComments.scrollHeight;
+                }
+            }
+            function sleep(time) {
+                return new Promise((resolve) => setTimeout(resolve, time));
+            }
+
+            function clearInput() {
+                addNewCommentInput.value = '';
+            }
+
+            function deleteComment(commentId) {
+                comments = comments.filter(({ id }) => commentId !== id);
+
+                generateList();
+            }
+
+            function editComment(comment, newComment) {
+                if (newComment === '') {
+                    return alert('No comment');
+                }
+                if (newComment === comment.comment) {
+                    return alert('Comment not changed');
+                }
+                if (newComment.length > 30) {
+                    return alert('Comment is too long');
+                }
+
+                comments = comments.map((c) =>
+                    c.id === comment.id
+                        ? {
+                              id: c.id,
+                              comment: newComment,
+                              createdAt: c.createdAt,
+                          }
+                        : c
+                );
+
+                addNewCommentInput.disabled = false;
+                addNewCommentSubmitButton.disabled = false;
+
+                generateList();
+            }
+
+            function toggleSaveEditButton(saveButton, editButton) {
+                if (saveButton.className.split(' ').includes('hidden')) {
+                    saveButton.className = '';
+                    editButton.className = 'hidden';
+                } else {
+                    saveButton.className = 'hidden';
+                    editButton.className = '';
+                }
+            }
+
+            function createComment(comment) {
+                const listElement = document.createElement('li');
+
+                const buttonsContainer = document.createElement('div');
+                buttonsContainer.className = 'buttonsContainer';
+
+                const deleteButton = document.createElement('button');
+                deleteButton.innerHTML = 'delete';
+                deleteButton.onclick = () => deleteComment(comment.id);
+
+                const editButton = document.createElement('button');
+                editButton.innerHTML = 'edit';
+                editButton.onclick = () => {
+                    addNewCommentSubmitButton.disabled = true;
+                    addNewCommentInput.disabled = true;
+                    editableText.readOnly = false;
+                    editableText.className = 'editableComment';
+                    editableText.select();
+                    editableText.focus();
+                    cancelEditButton.className = '';
+                    deleteButton.className = 'hidden';
+                    toggleSaveEditButton(saveButton, editButton);
+                };
+
+                const cancelEditButton = document.createElement('button');
+                cancelEditButton.innerHTML = 'cancel';
+                cancelEditButton.className = 'hidden';
+                cancelEditButton.onclick = () => {
+                    editableText.readOnly = false;
+                    editableText.className = 'comment';
+                    cancelEditButton.className = 'hidden';
+                    deleteButton.className = '';
+                    toggleSaveEditButton(saveButton, editButton);
+                    addNewCommentSubmitButton.disabled = false;
+                    addNewCommentInput.disabled = false;
+                    generateList();
+                };
+
+                const saveButton = document.createElement('button');
+                saveButton.innerHTML = 'save';
+                saveButton.className = 'hidden';
+                saveButton.onclick = () => {
+                    editComment(comment, editableText.value);
+                };
+
+                buttonsContainer.append(editButton);
+                buttonsContainer.append(saveButton);
+                buttonsContainer.append(deleteButton);
+                buttonsContainer.append(cancelEditButton);
+
+                const commentContainer = document.createElement('div');
+                commentContainer.className = 'commentContainer';
+
+                const commentDate = document.createElement('div');
+                commentDate.innerHTML = formatDate(comment.createdAt);
+                commentDate.className = 'date';
+
+                const editableText = document.createElement('input');
+                editableText.readOnly = true;
+                editableText.className = 'comment';
+                editableText.value = comment.comment;
+
+                commentContainer.append(editableText);
+                commentContainer.append(commentDate);
+
+                listElement.append(commentContainer);
+                listElement.append(buttonsContainer);
+
+                return listElement;
+            }
+
+            generateList();
+
+            function clearList() {
+                listOfComments.innerHTML = '';
+            }
+
+            function generateList() {
+                clearList();
+
+                commentsCount.innerHTML = comments.length;
+
+                if (comments.length === 0) {
+                    return;
+                }
+
+                comments.forEach((comment) => {
+                    const listItem = createComment(comment);
+
+                    listOfComments.append(listItem);
+                });
+            }
+
+            function addCommentToList() {
+                const comment = addNewCommentInput.value;
+                if (comment.length > 30) {
+                    return alert('Comment is too long');
+                }
+                if (comment === '') {
+                    return alert('No comment');
+                }
+
+                comments.push({
+                    id: Date.now(),
+                    comment,
+                    createdAt: new Date(),
+                });
+
+                generateList();
+                clearInput();
+
+                listOfComments.scrollTop = listOfComments.scrollHeight;
+            }
+        </script>
+    </body>
+</html>
